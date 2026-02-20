@@ -38,5 +38,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# data
-/data/
+# data (keep toast.db for deployment, ignore everything else)
+/data/*
+!/data/toast.db
