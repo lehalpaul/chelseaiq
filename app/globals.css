@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f7f8;
+  --foreground: #101827;
+  --muted: #e6ecef;
+  --muted-foreground: #4b5f6f;
+  --border: #cad7de;
+  --accent: #1ea98a;
+  --accent-foreground: #f4fffb;
+  --success: #169c77;
+  --warning: #b86e13;
+  --danger: #c14343;
+  --surface-1: rgba(255, 255, 255, 0.82);
+  --surface-2: rgba(232, 241, 245, 0.9);
+  --surface-3: rgba(214, 226, 232, 0.7);
+  --shadow-lg: 0 18px 40px rgba(16, 24, 39, 0.12);
+  --ring: rgba(30, 169, 138, 0.38);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #08121a;
+    --foreground: #eef6f8;
+    --muted: #132231;
+    --muted-foreground: #87a2b4;
+    --border: #274055;
+    --accent: #4fd5b5;
+    --accent-foreground: #02120f;
+    --success: #4fd5b5;
+    --warning: #f7b862;
+    --danger: #f07f7f;
+    --surface-1: rgba(11, 21, 31, 0.8);
+    --surface-2: rgba(16, 32, 46, 0.82);
+    --surface-3: rgba(24, 44, 61, 0.7);
+    --shadow-lg: 0 22px 44px rgba(0, 0, 0, 0.38);
+    --ring: rgba(79, 213, 181, 0.38);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1400px 600px at 0% 0%, rgba(30, 169, 138, 0.16), transparent 60%),
+    radial-gradient(1200px 540px at 95% 100%, rgba(22, 156, 119, 0.14), transparent 60%),
+    linear-gradient(165deg, var(--background) 0%, color-mix(in srgb, var(--background) 70%, #ffffff 30%) 100%);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.ai-shell {
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  background: linear-gradient(160deg, var(--surface-1), var(--surface-2));
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ai-panel {
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: linear-gradient(150deg, var(--surface-1), var(--surface-3));
+  box-shadow: 0 8px 24px rgba(11, 21, 31, 0.08);
+}
+
+.ai-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border) 30%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 30%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: center;
+}
+
+.ai-ring:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+:where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.fade-in-up {
+  animation: fade-in-up 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    background:
+      radial-gradient(720px 360px at 20% 0%, rgba(30, 169, 138, 0.14), transparent 62%),
+      radial-gradient(620px 380px at 70% 100%, rgba(22, 156, 119, 0.12), transparent 62%),
+      linear-gradient(165deg, var(--background) 0%, color-mix(in srgb, var(--background) 72%, #ffffff 28%) 100%);
+  }
+}
