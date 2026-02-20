@@ -18,13 +18,23 @@ function resolveDbPath(): string {
         path.resolve(configured),
         path.join(__dirname, "..", configured),
         path.join(__dirname, "..", "data", "toast.db"),
+        path.join(__dirname, "data", "toast.db"),
       ];
 
+      let found = false;
       for (const candidate of candidates) {
         if (fs.existsSync(candidate)) {
           fs.copyFileSync(candidate, tmpPath);
+          found = true;
           break;
         }
+      }
+
+      if (!found) {
+        throw new Error(
+          `Bundled database not found. Tried: ${candidates.join(", ")}. ` +
+          `cwd=${process.cwd()}, __dirname=${__dirname}`
+        );
       }
     }
 
