@@ -1,5 +1,4 @@
 import Database from "better-sqlite3";
-import path from "path";
 import fs from "fs";
 
 const dbPath = process.env.DATABASE_PATH || "data/toast.db";

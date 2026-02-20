@@ -1,15 +1,22 @@
 "use client";
 
+import { useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Message } from "@/components/message";
 import { SuggestedQuestions } from "@/components/suggested-questions";
 import { ChatInput } from "@/components/chat-input";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
+import { useResetChat } from "./layout";
 
 export default function ChatPage() {
-  const { messages, sendMessage, status } = useChat();
+  const { messages, sendMessage, setMessages, status } = useChat();
+  const { register } = useResetChat();
 
   const isLoading = status === "streaming" || status === "submitted";
+
+  useEffect(() => {
+    register(() => setMessages([]));
+  }, [register, setMessages]);
 
   const { containerRef, endRef } = useScrollToBottom<HTMLDivElement>();
 

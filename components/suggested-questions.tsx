@@ -2,11 +2,11 @@
 
 const suggestions = [
   "How did we do yesterday?",
-  "Who was our top server?",
-  "What were our top 10 items?",
+  "Top server yesterday?",
+  "Top 10 items?",
   "Compare all locations",
-  "What's our labor cost looking like?",
-  "Show me the hourly breakdown",
+  "Labor cost breakdown",
+  "Hourly sales breakdown",
 ];
 
 interface SuggestedQuestionsProps {

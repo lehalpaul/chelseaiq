@@ -52,7 +52,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
             submitInput();
           }
         }}
-        placeholder="Ask Chelseaiq Ai about service, labor, sales, or trends..."
+        placeholder="Ask about sales, labor, items, or trends..."
         disabled={isLoading}
         className="ai-ring max-h-40 min-h-[48px] flex-1 resize-none rounded-xl border border-border/70 bg-background/65 px-3 py-3 text-sm placeholder:text-muted-foreground/90 focus:border-accent/50 focus:outline-none disabled:opacity-50 sm:rounded-2xl sm:px-4"
       />
