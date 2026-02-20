@@ -11,10 +11,21 @@ function resolveDbPath(): string {
   if (isServerless) {
     const tmpPath = path.join("/tmp", "toast.db");
 
-    // If we have a bundled db and /tmp copy doesn't exist yet, copy it
-    const bundledPath = path.resolve(configured);
-    if (!fs.existsSync(tmpPath) && fs.existsSync(bundledPath)) {
-      fs.copyFileSync(bundledPath, tmpPath);
+    if (!fs.existsSync(tmpPath)) {
+      // Try multiple candidate locations for the bundled DB
+      const candidates = [
+        path.join(process.cwd(), configured),
+        path.resolve(configured),
+        path.join(__dirname, "..", configured),
+        path.join(__dirname, "..", "data", "toast.db"),
+      ];
+
+      for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, tmpPath);
+          break;
+        }
+      }
     }
 
     return tmpPath;

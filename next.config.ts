@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
-    "/api/**": ["./data/toast.db"],
+    "/(chat)/api/chat": ["./data/toast.db"],
   },
 };
 
