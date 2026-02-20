@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 
 function resolveDbPath(): string {
-  const configured = process.env.DATABASE_PATH || "data/toast.db";
+  const configured = (process.env.DATABASE_PATH || "data/toast.db").trim();
 
   // On Vercel/serverless, local FS outside /tmp is read-only and ephemeral.
   // Use /tmp for the working copy; the bundled db (if any) is read-only.
