@@ -3,78 +3,219 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { resolveDate, resolveLocationGuid } from "@/lib/date-utils";
 
+function normalizeCategories(categories?: string[]): string[] {
+  if (!categories || categories.length === 0) return [];
+
+  const deduped = new Map<string, string>();
+  for (const category of categories) {
+    const trimmed = category.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (!deduped.has(key)) deduped.set(key, trimmed);
+  }
+  return [...deduped.values()];
+}
+
+function mapItemRows(rows: Array<Record<string, unknown>>) {
+  return rows.map((r, i) => ({
+    rank: i + 1,
+    name: r.display_name,
+    category: r.sales_category_name,
+    quantitySold: r.quantity_sold,
+    revenue: r.revenue,
+    avgPrice: r.avg_price,
+    orderCount: r.order_count,
+  }));
+}
+
 export const getTopItems = tool({
   description:
-    "Get top-selling menu items ranked by revenue for a given date. Use for questions like 'What were our best sellers?'",
+    "Get sold menu items ranked by revenue for a given date. Supports category filters and returns all matching rows when limit is omitted.",
   inputSchema: z.object({
     date: z.string().optional().describe("Date in yyyy-MM-dd format."),
-    limit: z.number().optional().describe("Number of items to return. Default 10."),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Optional max rows to return. If omitted, returns all matching sold items."),
     locationId: z.string().optional().describe("Location GUID."),
+    includeCategories: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Only include these sales categories (case-insensitive), e.g. ['Food']."
+      ),
+    excludeCategories: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Exclude these sales categories (case-insensitive), e.g. ['Liquor', 'Wine', 'Draft Beer', 'Bottled Beer', 'NA Beverage', 'Private Event']."
+      ),
   }),
-  execute: async ({ date, limit = 10, locationId }) => {
+  execute: async ({
+    date,
+    limit,
+    locationId,
+    includeCategories,
+    excludeCategories,
+  }) => {
     const db = getDb();
     const resolvedDate = resolveDate(date);
     const guid = resolveLocationGuid(locationId);
+    const include = normalizeCategories(includeCategories);
+    const exclude = normalizeCategories(excludeCategories).filter(
+      (category) =>
+        !include.some(
+          (included) => included.toLowerCase() === category.toLowerCase()
+        )
+    );
 
     if (!guid) return { error: "No location configured" };
 
+    const whereClauses = [
+      "location_guid = ?",
+      "business_date = ?",
+      "revenue > 0",
+    ];
+    const params: Array<string | number> = [guid, resolvedDate];
+
+    if (include.length > 0) {
+      whereClauses.push(
+        `COALESCE(sales_category_name, '') COLLATE NOCASE IN (${include
+          .map(() => "?")
+          .join(", ")})`
+      );
+      params.push(...include);
+    }
+
+    if (exclude.length > 0) {
+      whereClauses.push(
+        `COALESCE(sales_category_name, '') COLLATE NOCASE NOT IN (${exclude
+          .map(() => "?")
+          .join(", ")})`
+      );
+      params.push(...exclude);
+    }
+
+    const limitClause = typeof limit === "number" ? " LIMIT ?" : "";
+    if (typeof limit === "number") {
+      params.push(limit);
+    }
+
+    const query = `
+      SELECT display_name, sales_category_name, quantity_sold, revenue, avg_price, order_count
+      FROM item_daily_metrics
+      WHERE ${whereClauses.join(" AND ")}
+      ORDER BY revenue DESC
+      ${limitClause}
+    `;
+
     const rows = db
-      .prepare(
-        "SELECT display_name, sales_category_name, quantity_sold, revenue, avg_price, order_count FROM item_daily_metrics WHERE location_guid = ? AND business_date = ? ORDER BY revenue DESC LIMIT ?"
-      )
-      .all(guid, resolvedDate, limit) as Array<Record<string, unknown>>;
+      .prepare(query)
+      .all(...params) as Array<Record<string, unknown>>;
 
     return {
       date: resolvedDate,
       locationId: guid,
+      includeCategories: include,
+      excludeCategories: exclude,
       itemCount: rows.length,
-      items: rows.map((r, i) => ({
-        rank: i + 1,
-        name: r.display_name,
-        category: r.sales_category_name,
-        quantitySold: r.quantity_sold,
-        revenue: r.revenue,
-        avgPrice: r.avg_price,
-        orderCount: r.order_count,
-      })),
+      items: mapItemRows(rows),
     };
   },
 });
 
 export const getBottomItems = tool({
   description:
-    "Get lowest-performing menu items by revenue. Use for identifying underperformers.",
+    "Get lowest-performing menu items by revenue. Supports optional category filters for focused analysis.",
   inputSchema: z.object({
     date: z.string().optional().describe("Date in yyyy-MM-dd format."),
-    limit: z.number().optional().describe("Number of items. Default 10."),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Number of items. Default 10."),
     locationId: z.string().optional().describe("Location GUID."),
+    includeCategories: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Only include these sales categories (case-insensitive), e.g. ['Food']."
+      ),
+    excludeCategories: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Exclude these sales categories (case-insensitive), e.g. ['Liquor', 'Wine']."
+      ),
   }),
-  execute: async ({ date, limit = 10, locationId }) => {
+  execute: async ({
+    date,
+    limit = 10,
+    locationId,
+    includeCategories,
+    excludeCategories,
+  }) => {
     const db = getDb();
     const resolvedDate = resolveDate(date);
     const guid = resolveLocationGuid(locationId);
+    const include = normalizeCategories(includeCategories);
+    const exclude = normalizeCategories(excludeCategories).filter(
+      (category) =>
+        !include.some(
+          (included) => included.toLowerCase() === category.toLowerCase()
+        )
+    );
 
     if (!guid) return { error: "No location configured" };
 
+    const whereClauses = [
+      "location_guid = ?",
+      "business_date = ?",
+      "revenue > 0",
+    ];
+    const params: Array<string | number> = [guid, resolvedDate];
+
+    if (include.length > 0) {
+      whereClauses.push(
+        `COALESCE(sales_category_name, '') COLLATE NOCASE IN (${include
+          .map(() => "?")
+          .join(", ")})`
+      );
+      params.push(...include);
+    }
+
+    if (exclude.length > 0) {
+      whereClauses.push(
+        `COALESCE(sales_category_name, '') COLLATE NOCASE NOT IN (${exclude
+          .map(() => "?")
+          .join(", ")})`
+      );
+      params.push(...exclude);
+    }
+
+    const query = `
+      SELECT display_name, sales_category_name, quantity_sold, revenue, avg_price, order_count
+      FROM item_daily_metrics
+      WHERE ${whereClauses.join(" AND ")}
+      ORDER BY revenue ASC
+      LIMIT ?
+    `;
+    params.push(limit);
+
     const rows = db
-      .prepare(
-        "SELECT display_name, sales_category_name, quantity_sold, revenue, avg_price, order_count FROM item_daily_metrics WHERE location_guid = ? AND business_date = ? AND revenue > 0 ORDER BY revenue ASC LIMIT ?"
-      )
-      .all(guid, resolvedDate, limit) as Array<Record<string, unknown>>;
+      .prepare(query)
+      .all(...params) as Array<Record<string, unknown>>;
 
     return {
       date: resolvedDate,
       locationId: guid,
+      includeCategories: include,
+      excludeCategories: exclude,
       itemCount: rows.length,
-      items: rows.map((r, i) => ({
-        rank: i + 1,
-        name: r.display_name,
-        category: r.sales_category_name,
-        quantitySold: r.quantity_sold,
-        revenue: r.revenue,
-        avgPrice: r.avg_price,
-        orderCount: r.order_count,
-      })),
+      items: mapItemRows(rows),
     };
   },
 });

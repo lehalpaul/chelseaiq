@@ -35,18 +35,17 @@ export default function ChatPage() {
             <SuggestedQuestions onSelect={handleSend} />
           )}
 
-          {messages.map((message) => (
-            <Message key={message.id} message={message} />
+          {messages.map((message, idx) => (
+            <Message
+              key={message.id}
+              message={message}
+              isStreaming={
+                isLoading &&
+                idx === messages.length - 1 &&
+                message.role === "assistant"
+              }
+            />
           ))}
-
-          {isLoading && messages.length > 0 && (
-            <div className="flex justify-start">
-              <div className="ai-panel fade-in-up inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium text-muted-foreground sm:text-sm">
-                <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-                Thinking through your request...
-              </div>
-            </div>
-          )}
 
           <div ref={endRef} />
         </div>

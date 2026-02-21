@@ -1,10 +1,17 @@
 import { getDailyRevenue, getRevenueByLocation, getRevenueTrend, getPaymentBreakdown } from "./sales";
-import { getTopItems, getBottomItems, getCategoryBreakdown, getItemPairingRate, getItemPerformance } from "./items";
+import {
+  getTopItems,
+  getBottomItems,
+  getCategoryBreakdown,
+  getItemPairingRate,
+  getItemPerformance,
+} from "./items";
 import { getLaborSummary, getServerPerformance, getOvertimeReport, getEmployeesOnShift } from "./labor";
 import { getDaypartBreakdown, getPeakHours } from "./daypart";
 import { getGuestMetrics, getDiningOptionBreakdown } from "./guest";
 import { getExecutiveBrief } from "./brief";
 import { compareLocations, comparePeriods } from "./comparison";
+import { addAnalysisStep } from "./analysis";
 
 export const agentTools = {
   getDailyRevenue,
@@ -27,4 +34,5 @@ export const agentTools = {
   getExecutiveBrief,
   compareLocations,
   comparePeriods,
+  addAnalysisStep,
 };

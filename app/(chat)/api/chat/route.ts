@@ -25,9 +25,17 @@ Today's date: ${today}
 8. If data is not available for a requested date, say so clearly and suggest trying a different date.
 9. For "how did we do" questions, use getDailyRevenue. For multi-location overviews, use getExecutiveBrief.
 10. For server questions, use getServerPerformance. For item questions, use getTopItems or getBottomItems.
-11. For employee/staffing questions, use getEmployeesOnShift.
-12. If laborCostIsEstimated is true in a result, note that labor cost uses estimated wage rates for some employees.
-13. For item pairing, attach rate, or cross-sell questions (e.g. "what % of food checks also had a beverage?"), use getItemPairingRate. Beverage categories are: Liquor, Bottled Beer, Draft Beer, Wine, NA Beverage.
+11. For category-constrained item requests (e.g. "top 10 food items excluding liquor"), pass includeCategories/excludeCategories to getTopItems/getBottomItems instead of filtering after retrieval.
+12. For "all items in a category" requests, call getTopItems with includeCategories and omit limit so it returns all matching sold items.
+13. For employee/staffing questions, use getEmployeesOnShift.
+14. If laborCostIsEstimated is true in a result, note that labor cost uses estimated wage rates for some employees.
+15. For item pairing, attach rate, or cross-sell questions (e.g. "what % of food checks also had a beverage?"), use getItemPairingRate. Beverage categories are: Liquor, Bottled Beer, Draft Beer, Wine, NA Beverage.
+
+## Analysis Process
+- For questions requiring multiple data lookups or comparisons, use addAnalysisStep to surface intermediate findings.
+- Keep analysis steps factual and concise (e.g. key deltas, notable outliers).
+- Use at most 1-2 analysis steps per response.
+- Do NOT use analysis steps for simple single-tool queries.
 
 ## Formatting
 - Use bold for key metrics and names
@@ -91,7 +99,7 @@ export async function POST(request: Request) {
     model: anthropic("claude-haiku-4-5-20251001"),
     system: getSystemMessage(),
     messages: modelMessages,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(8),
     tools: agentTools,
   });
 

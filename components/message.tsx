@@ -8,12 +8,19 @@ import { DaypartChart } from "./daypart-chart";
 import { ComparisonTable } from "./comparison-table";
 import { RecommendationCards } from "./recommendation-card";
 import { ShiftTable } from "./shift-table";
+import { AnalysisStep } from "./analysis-step";
+
+type ToolRenderContext = {
+  isStreaming: boolean;
+};
+
+type ToolRenderer = (
+  result: Record<string, unknown>,
+  context: ToolRenderContext,
+) => React.ReactNode;
 
 // Tool names that should render custom components
-const TOOL_RENDERERS: Record<
-  string,
-  (result: Record<string, unknown>) => React.ReactNode
-> = {
+const TOOL_RENDERERS: Record<string, ToolRenderer> = {
   getDailyRevenue: (result) => (
     <div className="space-y-3">
       <MetricsGrid data={result} />
@@ -171,6 +178,43 @@ const TOOL_RENDERERS: Record<
       />
     );
   },
+  addAnalysisStep: (result, context) => {
+    const title = result.title as string | undefined;
+    const content = result.content as string | undefined;
+    if (!title || !content) return null;
+
+    return (
+      <AnalysisStep
+        title={title}
+        content={content}
+        isStreaming={context.isStreaming}
+      />
+    );
+  },
+};
+
+const TOOL_LABELS: Record<string, string> = {
+  getDailyRevenue: "Pulling revenue data...",
+  getRevenueByLocation: "Comparing location revenue...",
+  getRevenueTrend: "Loading revenue trend...",
+  getPaymentBreakdown: "Loading payment mix...",
+  getTopItems: "Fetching menu items...",
+  getBottomItems: "Fetching underperforming items...",
+  getCategoryBreakdown: "Loading category metrics...",
+  getItemPairingRate: "Analyzing item pairing...",
+  getItemPerformance: "Loading item performance...",
+  getLaborSummary: "Loading labor metrics...",
+  getServerPerformance: "Loading server data...",
+  getOvertimeReport: "Loading overtime report...",
+  getEmployeesOnShift: "Loading shift data...",
+  getDaypartBreakdown: "Loading daypart performance...",
+  getPeakHours: "Finding peak hours...",
+  getGuestMetrics: "Loading guest metrics...",
+  getDiningOptionBreakdown: "Loading dining option mix...",
+  getExecutiveBrief: "Building executive brief...",
+  compareLocations: "Comparing locations...",
+  comparePeriods: "Comparing periods...",
+  addAnalysisStep: "Summarizing findings...",
 };
 
 function extractToolName(partType: string): string | null {
@@ -180,11 +224,20 @@ function extractToolName(partType: string): string | null {
   return null;
 }
 
-interface MessageProps {
-  message: UIMessage;
+function getToolLabel(toolName: string): string {
+  return TOOL_LABELS[toolName] ?? "Analyzing...";
 }
 
-export function Message({ message }: MessageProps) {
+function hasOutput(state: string, output: unknown): boolean {
+  return (state === "output-available" || state === "result") && !!output;
+}
+
+interface MessageProps {
+  message: UIMessage;
+  isStreaming?: boolean;
+}
+
+export function Message({ message, isStreaming = false }: MessageProps) {
   const isUser = message.role === "user";
 
   return (
@@ -218,8 +271,19 @@ export function Message({ message }: MessageProps) {
             const toolPart = part as unknown as {
               state: string;
               output?: unknown;
+              errorText?: string;
             };
-            if (toolPart.state === "result" && toolPart.output) {
+            if (toolPart.state === "output-error") {
+              return (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-danger/20 bg-danger/10 px-3 py-2 text-sm text-danger"
+                >
+                  {toolPart.errorText ?? "Tool execution failed."}
+                </div>
+              );
+            }
+            if (hasOutput(toolPart.state, toolPart.output)) {
               const result = toolPart.output as Record<string, unknown>;
               if (result.error) {
                 return (
@@ -233,7 +297,11 @@ export function Message({ message }: MessageProps) {
               }
               const renderer = TOOL_RENDERERS[toolName];
               if (renderer) {
-                return <div key={idx}>{renderer(result)}</div>;
+                return (
+                  <div key={idx}>
+                    {renderer(result, { isStreaming })}
+                  </div>
+                );
               }
             }
             if (
@@ -246,7 +314,7 @@ export function Message({ message }: MessageProps) {
                   className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5 text-xs font-medium text-muted-foreground sm:text-sm"
                 >
                   <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-                  Analyzing...
+                  {getToolLabel(toolName)}
                 </div>
               );
             }
@@ -258,8 +326,19 @@ export function Message({ message }: MessageProps) {
               toolName: string;
               state: string;
               output?: unknown;
+              errorText?: string;
             };
-            if (dynPart.state === "result" && dynPart.output) {
+            if (dynPart.state === "output-error") {
+              return (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-danger/20 bg-danger/10 px-3 py-2 text-sm text-danger"
+                >
+                  {dynPart.errorText ?? "Tool execution failed."}
+                </div>
+              );
+            }
+            if (hasOutput(dynPart.state, dynPart.output)) {
               const result = dynPart.output as Record<string, unknown>;
               if (result.error) {
                 return (
@@ -273,7 +352,11 @@ export function Message({ message }: MessageProps) {
               }
               const renderer = TOOL_RENDERERS[dynPart.toolName];
               if (renderer) {
-                return <div key={idx}>{renderer(result)}</div>;
+                return (
+                  <div key={idx}>
+                    {renderer(result, { isStreaming })}
+                  </div>
+                );
               }
             }
             if (
@@ -286,7 +369,7 @@ export function Message({ message }: MessageProps) {
                   className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5 text-xs font-medium text-muted-foreground sm:text-sm"
                 >
                   <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-                  Analyzing...
+                  {getToolLabel(dynPart.toolName)}
                 </div>
               );
             }
