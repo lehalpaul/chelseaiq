@@ -6,9 +6,10 @@ import {
   timingSafeEqualString,
 } from "@/lib/auth-utils";
 import { agentTools } from "@/tools";
+import { businessToday } from "@/lib/date-utils";
 
 function getSystemMessage(): string {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = businessToday();
   return `You are an intelligent assistant for Chelsea restaurant group, which operates 3 Toast POS locations. You help restaurant operators understand their business performance by answering natural language questions backed by real data.
 
 Today's date: ${today}

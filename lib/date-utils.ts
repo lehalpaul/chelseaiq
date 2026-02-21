@@ -45,11 +45,67 @@ export function fromIsoDate(dateStr: string): Date {
   return parseISO(dateStr);
 }
 
+const DEFAULT_TZ = "America/Chicago";
+
+function getBusinessTz(): string {
+  const tz = process.env.BUSINESS_TZ || DEFAULT_TZ;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return tz;
+  } catch {
+    return DEFAULT_TZ;
+  }
+}
+
 /**
- * Get yesterday's date
+ * Get "now" anchored to the business timezone (defaults to America/Chicago).
+ * Uses formatToParts for deterministic parsing across all environments.
+ * Returns a Date whose UTC fields represent the local wall-clock,
+ * so date-fns arithmetic (subDays, previousMonday, etc.) works correctly.
+ */
+function businessNow(): Date {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: getBusinessTz(),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((p) => p.type === type)!.value);
+
+  return new Date(
+    Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"))
+  );
+}
+
+/**
+ * Get today's date as yyyy-MM-dd in the business timezone.
+ * Uses formatToParts for guaranteed format regardless of locale.
+ */
+export function businessToday(): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: getBusinessTz(),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)!.value;
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/**
+ * Get yesterday's date in the business timezone
  */
 export function yesterday(): Date {
-  return subDays(new Date(), 1);
+  return subDays(businessNow(), 1);
 }
 
 /**
@@ -62,14 +118,14 @@ export function resolveDate(input?: string): string {
   const lower = input.toLowerCase().trim();
 
   if (lower === "yesterday") {
-    return toIsoDate(subDays(new Date(), 1));
+    return toIsoDate(subDays(businessNow(), 1));
   }
   if (lower === "today") {
-    return toIsoDate(new Date());
+    return toIsoDate(businessNow());
   }
   if (lower.startsWith("last ")) {
     const dayName = lower.replace("last ", "");
-    const now = new Date();
+    const now = businessNow();
     const dayMap: Record<string, (d: Date) => Date> = {
       monday: previousMonday,
       tuesday: previousTuesday,
@@ -83,7 +139,7 @@ export function resolveDate(input?: string): string {
     if (fn) return toIsoDate(fn(now));
   }
   if (lower === "last week") {
-    const weekStart = startOfWeek(subWeeks(new Date(), 1), {
+    const weekStart = startOfWeek(subWeeks(businessNow(), 1), {
       weekStartsOn: 1,
     });
     return toIsoDate(weekStart);
