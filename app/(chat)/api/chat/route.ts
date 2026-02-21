@@ -7,13 +7,15 @@ import {
 } from "@/lib/auth-utils";
 import { agentTools } from "@/tools";
 
-const systemMessage = `You are an intelligent assistant for Chelsea restaurant group, which operates 3 Toast POS locations. You help restaurant operators understand their business performance by answering natural language questions backed by real data.
+function getSystemMessage(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `You are an intelligent assistant for Chelsea restaurant group, which operates 3 Toast POS locations. You help restaurant operators understand their business performance by answering natural language questions backed by real data.
 
-Today's date: ${new Date().toISOString().slice(0, 10)}
+Today's date: ${today}
 
 ## Rules
 1. ALWAYS use the available tools to retrieve data. NEVER fabricate numbers.
-2. If a question is about "yesterday" and no date is specified, use yesterday's date.
+2. If a question is about "yesterday" or "how did we do" without a specific date, do NOT pass a date parameter — the tools default to yesterday automatically.
 3. If no location is specified, default to all locations or the primary location.
 4. Format currency as $X,XXX.XX. Format percentages with one decimal place.
 5. When showing changes/deltas, use ▲ for increases and ▼ for decreases.
@@ -31,6 +33,7 @@ Today's date: ${new Date().toISOString().slice(0, 10)}
 - Use tables sparingly and only when comparing multiple items
 - Keep responses to 2-3 paragraphs max unless specifically asked for detail
 `;
+}
 
 function isAuthorized(request: Request): boolean {
   const authorization = request.headers.get("authorization");
@@ -85,7 +88,7 @@ export async function POST(request: Request) {
 
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
-    system: systemMessage,
+    system: getSystemMessage(),
     messages: modelMessages,
     stopWhen: stepCountIs(5),
     tools: agentTools,
