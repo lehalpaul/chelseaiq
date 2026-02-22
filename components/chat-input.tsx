@@ -12,7 +12,10 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    // Only autofocus on devices with a fine pointer (mouse/trackpad)
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      inputRef.current?.focus();
+    }
   }, []);
 
   const resizeInput = () => {
