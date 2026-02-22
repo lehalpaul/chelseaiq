@@ -1,25 +1,28 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { resolveDate } from "@/lib/date-utils";
+import { resolveDate, getAllLocationGuids } from "@/lib/date-utils";
 import { evaluateRecommendations } from "@/lib/recommendations";
 
 export const getExecutiveBrief = tool({
   description:
-    "Get a comprehensive executive brief combining all locations' key metrics, top items, and labor data. Use for 'Give me a summary' or 'Executive brief' questions.",
+    "Get a comprehensive executive brief with key metrics, top items, and labor data. Use for 'Give me a summary' or 'Executive brief' questions.",
   inputSchema: z.object({
     date: z.string().optional().describe("Date in yyyy-MM-dd format."),
   }),
   execute: async ({ date }) => {
     const db = getDb();
     const resolvedDate = resolveDate(date);
+    const guids = getAllLocationGuids();
+    if (guids.length === 0) return { error: "No location configured" };
+    const placeholders = guids.map(() => "?").join(",");
 
-    // All locations' daily metrics
+    // All configured locations' daily metrics
     const dailyRows = db
       .prepare(
-        "SELECT * FROM daily_metrics WHERE business_date = ? ORDER BY net_sales DESC"
+        `SELECT * FROM daily_metrics WHERE business_date = ? AND location_guid IN (${placeholders}) ORDER BY net_sales DESC`
       )
-      .all(resolvedDate) as Array<Record<string, unknown>>;
+      .all(resolvedDate, ...guids) as Array<Record<string, unknown>>;
 
     if (dailyRows.length === 0) {
       return { error: `No data found for ${resolvedDate}`, date: resolvedDate };
@@ -46,24 +49,24 @@ export const getExecutiveBrief = tool({
       totalOvertimeHours += r.overtime_hours as number;
     }
 
-    // Top items across all locations
+    // Top items across configured locations
     const topItems = db
       .prepare(
         `SELECT display_name, SUM(quantity_sold) as total_qty, SUM(revenue) as total_revenue
-         FROM item_daily_metrics WHERE business_date = ?
+         FROM item_daily_metrics WHERE business_date = ? AND location_guid IN (${placeholders})
          GROUP BY display_name
          ORDER BY total_revenue DESC LIMIT 5`
       )
-      .all(resolvedDate) as Array<Record<string, unknown>>;
+      .all(resolvedDate, ...guids) as Array<Record<string, unknown>>;
 
-    // Top servers across all locations
+    // Top servers across configured locations
     const topServers = db
       .prepare(
         `SELECT server_name, location_guid, net_sales, tips, avg_check, order_count
-         FROM server_daily_metrics WHERE business_date = ?
+         FROM server_daily_metrics WHERE business_date = ? AND location_guid IN (${placeholders})
          ORDER BY net_sales DESC LIMIT 5`
       )
-      .all(resolvedDate) as Array<Record<string, unknown>>;
+      .all(resolvedDate, ...guids) as Array<Record<string, unknown>>;
 
     return {
       date: resolvedDate,

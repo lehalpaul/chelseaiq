@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { resolveDate, resolveLocationGuid } from "@/lib/date-utils";
+import { resolveDate, resolveLocationGuid, getAllLocationGuids } from "@/lib/date-utils";
 import { evaluateRecommendations } from "@/lib/recommendations";
 
 export const getDailyRevenue = tool({
@@ -114,7 +114,7 @@ export const getDailyRevenue = tool({
 
 export const getRevenueByLocation = tool({
   description:
-    "Get revenue metrics for all locations on a given date. Use for multi-location comparisons.",
+    "Get revenue metrics for configured locations on a given date.",
   inputSchema: z.object({
     date: z
       .string()
@@ -124,12 +124,15 @@ export const getRevenueByLocation = tool({
   execute: async ({ date }) => {
     const db = getDb();
     const resolvedDate = resolveDate(date);
+    const guids = getAllLocationGuids();
+    if (guids.length === 0) return { error: "No location configured" };
+    const placeholders = guids.map(() => "?").join(",");
 
     const rows = db
       .prepare(
-        "SELECT * FROM daily_metrics WHERE business_date = ? ORDER BY net_sales DESC"
+        `SELECT * FROM daily_metrics WHERE business_date = ? AND location_guid IN (${placeholders}) ORDER BY net_sales DESC`
       )
-      .all(resolvedDate) as Array<Record<string, unknown>>;
+      .all(resolvedDate, ...guids) as Array<Record<string, unknown>>;
 
     if (rows.length === 0) {
       return { error: `No data found for ${resolvedDate}`, date: resolvedDate };
