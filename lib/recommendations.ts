@@ -1,6 +1,6 @@
 export interface Recommendation {
   id: string;
-  category: "revenue" | "labor" | "menu" | "operations";
+  category: "revenue" | "labor" | "menu" | "operations" | "cost";
   severity: "info" | "warning" | "critical";
   title: string;
   body: string;
@@ -22,6 +22,11 @@ interface MetricData {
     avgCheck?: number;
     salesDeltaPct?: number;
   };
+}
+
+export interface CostMetricData {
+  dailyCost?: number;
+  dailyCostPrior?: number;
 }
 
 const rules: Array<{
@@ -193,4 +198,37 @@ export function evaluateRecommendations(
     (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
   );
   return results;
+}
+
+export function evaluateCostRecommendations(
+  data: CostMetricData
+): Recommendation[] {
+  const current = data.dailyCost;
+  const prior = data.dailyCostPrior;
+
+  if (
+    current === undefined ||
+    prior === undefined ||
+    prior <= 0
+  ) {
+    return [];
+  }
+
+  const deltaPct = ((current - prior) / prior) * 100;
+  if (deltaPct <= 25) {
+    return [];
+  }
+
+  return [
+    {
+      id: "cost-spike",
+      category: "cost",
+      severity: "warning",
+      title: "Daily cost spiked vs prior day",
+      body: `Purchasing cost increased ${deltaPct.toFixed(1)}% compared to the prior day ($${current.toFixed(2)} vs $${prior.toFixed(2)}). Review invoices and vendor pricing changes.`,
+      metric: "dailyCostDeltaPct",
+      value: deltaPct,
+      threshold: 25,
+    },
+  ];
 }

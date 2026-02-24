@@ -32,7 +32,12 @@ export const getTopItems = tool({
   description:
     "Get sold menu items ranked by revenue for a given date. Supports category filters and returns all matching rows when limit is omitted.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     limit: z
       .number()
       .int()
@@ -130,7 +135,12 @@ export const getBottomItems = tool({
   description:
     "Get lowest-performing menu items by revenue. Supports optional category filters for focused analysis.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     limit: z
       .number()
       .int()
@@ -224,7 +234,12 @@ export const getCategoryBreakdown = tool({
   description:
     "Get sales breakdown by menu category (e.g. Food, Beverage, Alcohol). Use for category mix analysis.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {
@@ -268,7 +283,12 @@ export const getItemPairingRate = tool({
   description:
     "Get the percentage of checks containing a source category that also contain items from paired categories. Use for item pairing, attach rate, or cross-sell questions like 'what % of food checks also had a beverage?'",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
     sourceCategory: z
       .string()
@@ -404,13 +424,23 @@ export const getItemPerformance = tool({
     "Get performance trend for a specific menu item over a date range.",
   inputSchema: z.object({
     itemName: z.string().describe("The menu item name to look up."),
-    startDate: z.string().describe("Start date in yyyy-MM-dd format."),
-    endDate: z.string().describe("End date in yyyy-MM-dd format."),
+    startDate: z
+      .string()
+      .describe(
+        "Start date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
+    endDate: z
+      .string()
+      .describe(
+        "End date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ itemName, startDate, endDate, locationId }) => {
     const db = getDb();
     const guid = resolveLocationGuid(locationId);
+    const resolvedStartDate = resolveDate(startDate);
+    const resolvedEndDate = resolveDate(endDate);
 
     if (!guid) return { error: "No location configured" };
 
@@ -418,7 +448,7 @@ export const getItemPerformance = tool({
       .prepare(
         "SELECT business_date, quantity_sold, revenue, avg_price, order_count FROM item_daily_metrics WHERE location_guid = ? AND display_name LIKE ? AND business_date BETWEEN ? AND ? ORDER BY business_date ASC"
       )
-      .all(guid, `%${itemName}%`, startDate, endDate) as Array<
+      .all(guid, `%${itemName}%`, resolvedStartDate, resolvedEndDate) as Array<
       Record<string, unknown>
     >;
 
@@ -428,8 +458,8 @@ export const getItemPerformance = tool({
     return {
       itemName,
       locationId: guid,
-      startDate,
-      endDate,
+      startDate: resolvedStartDate,
+      endDate: resolvedEndDate,
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       totalQuantity: Math.round(totalQty * 100) / 100,
       dayCount: rows.length,

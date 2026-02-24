@@ -12,7 +12,7 @@ export const getDailyRevenue = tool({
       .string()
       .optional()
       .describe(
-        "Date in yyyy-MM-dd format. Defaults to yesterday if not provided."
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd. Defaults to yesterday if not provided."
       ),
     locationId: z
       .string()
@@ -22,7 +22,7 @@ export const getDailyRevenue = tool({
       .string()
       .optional()
       .describe(
-        "Date to compare against in yyyy-MM-dd format (e.g. same day last week)."
+        "Date to compare against. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
       ),
   }),
   execute: async ({ date, locationId, compareTo }) => {
@@ -70,17 +70,18 @@ export const getDailyRevenue = tool({
 
     // Comparison
     if (compareTo) {
+      const resolvedCompareTo = resolveDate(compareTo);
       const compRow = db
         .prepare(
           "SELECT * FROM daily_metrics WHERE location_guid = ? AND business_date = ?"
         )
-        .get(guid, compareTo) as Record<string, unknown> | undefined;
+        .get(guid, resolvedCompareTo) as Record<string, unknown> | undefined;
 
       if (compRow) {
         const compNetSales = compRow.net_sales as number;
         const currentNetSales = row.net_sales as number;
         result.comparison = {
-          date: compareTo,
+          date: resolvedCompareTo,
           netSales: compNetSales,
           orderCount: compRow.order_count,
           avgCheck: compRow.avg_check,
@@ -119,7 +120,9 @@ export const getRevenueByLocation = tool({
     date: z
       .string()
       .optional()
-      .describe("Date in yyyy-MM-dd format. Defaults to yesterday."),
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd. Defaults to yesterday."
+      ),
   }),
   execute: async ({ date }) => {
     const db = getDb();
@@ -164,13 +167,23 @@ export const getRevenueTrend = tool({
   description:
     "Get daily revenue trend over a date range for trend analysis. Returns an array of daily metrics.",
   inputSchema: z.object({
-    startDate: z.string().describe("Start date in yyyy-MM-dd format."),
-    endDate: z.string().describe("End date in yyyy-MM-dd format."),
+    startDate: z
+      .string()
+      .describe(
+        "Start date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
+    endDate: z
+      .string()
+      .describe(
+        "End date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID. Defaults to first location."),
   }),
   execute: async ({ startDate, endDate, locationId }) => {
     const db = getDb();
     const guid = resolveLocationGuid(locationId);
+    const resolvedStartDate = resolveDate(startDate);
+    const resolvedEndDate = resolveDate(endDate);
 
     if (!guid) return { error: "No location configured" };
 
@@ -178,12 +191,12 @@ export const getRevenueTrend = tool({
       .prepare(
         "SELECT business_date, net_sales, order_count, guest_count, avg_check, labor_cost_pct FROM daily_metrics WHERE location_guid = ? AND business_date BETWEEN ? AND ? ORDER BY business_date ASC"
       )
-      .all(guid, startDate, endDate) as Array<Record<string, unknown>>;
+      .all(guid, resolvedStartDate, resolvedEndDate) as Array<Record<string, unknown>>;
 
     return {
       locationId: guid,
-      startDate,
-      endDate,
+      startDate: resolvedStartDate,
+      endDate: resolvedEndDate,
       dayCount: rows.length,
       trend: rows.map((r) => ({
         date: r.business_date,
@@ -201,7 +214,12 @@ export const getPaymentBreakdown = tool({
   description:
     "Get payment method breakdown (cash vs credit vs other) for a date.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {

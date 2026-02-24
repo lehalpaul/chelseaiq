@@ -1,12 +1,30 @@
 "use client";
 
-const suggestions = [
-  "How did we do yesterday?",
-  "Top server yesterday?",
-  "Top 10 items?",
-  "Compare all locations",
-  "Labor cost breakdown",
-  "Hourly sales breakdown",
+const questionGroups = [
+  {
+    title: "Toast POS",
+    subtitle: "Sales, labor, menu, and guest operations",
+    questions: [
+      "How did we do yesterday?",
+      "Top server yesterday?",
+      "Top 10 items yesterday?",
+      "Labor cost breakdown yesterday",
+      "Hourly sales breakdown yesterday",
+      "Food to beverage attach rate yesterday",
+    ],
+  },
+  {
+    title: "MarginEdge",
+    subtitle: "Purchasing, invoices, and vendor spend",
+    questions: [
+      "What did we spend yesterday?",
+      "Cost trend this week",
+      "Top vendors by spend this week",
+      "Show finalized invoices yesterday",
+      "Cost by category yesterday",
+      "Daily cost trend for last 7 days",
+    ],
+  },
 ];
 
 interface SuggestedQuestionsProps {
@@ -24,19 +42,35 @@ export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
           Built for operators who move fast
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Ask in plain language and get analytics, recommendations, and
-          staffing insight in one stream.
+          Ask in plain language and get Toast operations plus MarginEdge cost
+          insights in one stream.
         </p>
       </div>
-      <div className="grid w-full max-w-2xl grid-cols-1 gap-2.5 sm:grid-cols-2">
-        {suggestions.map((q, index) => (
-          <button
-            key={`${index}-${q}`}
-            onClick={() => onSelect(q)}
-            className="ai-panel ai-ring rounded-xl px-4 py-3 text-left text-sm font-medium transition-all hover:-translate-y-0.5 hover:border-accent/35 hover:bg-accent/10 sm:rounded-2xl sm:text-[15px]"
-          >
-            {q}
-          </button>
+
+      <div className="w-full max-w-4xl space-y-4">
+        {questionGroups.map((group) => (
+          <section key={group.title} className="ai-panel rounded-2xl p-3 sm:p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold tracking-tight sm:text-base">
+                {group.title}
+              </h3>
+              <p className="text-[11px] text-muted-foreground sm:text-xs">
+                {group.subtitle}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {group.questions.map((q) => (
+                <button
+                  key={`${group.title}-${q}`}
+                  onClick={() => onSelect(q)}
+                  className="ai-ring rounded-xl border border-border/70 bg-background/55 px-4 py-3 text-left text-sm font-medium transition-all hover:-translate-y-0.5 hover:border-accent/35 hover:bg-accent/10 sm:rounded-2xl sm:text-[15px]"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </div>

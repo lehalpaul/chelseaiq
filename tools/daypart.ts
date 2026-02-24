@@ -7,7 +7,12 @@ export const getDaypartBreakdown = tool({
   description:
     "Get revenue and traffic breakdown by hour of day. Use for daypart analysis like lunch vs dinner performance.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {
@@ -90,7 +95,12 @@ export const getPeakHours = tool({
   description:
     "Get the busiest and quietest hours of the day by revenue and order count.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {

@@ -1,13 +1,22 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { resolveDate, resolveLocationGuid, getAllLocationGuids } from "@/lib/date-utils";
+import {
+  resolveDate,
+  resolveLocationGuid,
+  getAllLocationGuids,
+} from "@/lib/date-utils";
 
 export const compareLocations = tool({
   description:
     "Compare configured locations side-by-side on key metrics for a given date.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
   }),
   execute: async ({ date }) => {
     const db = getDb();
@@ -58,10 +67,26 @@ export const comparePeriods = tool({
   description:
     "Compare two date ranges for a location. Use for week-over-week or period comparisons like 'Compare this week to last week'.",
   inputSchema: z.object({
-    period1Start: z.string().describe("First period start date (yyyy-MM-dd)."),
-    period1End: z.string().describe("First period end date (yyyy-MM-dd)."),
-    period2Start: z.string().describe("Second period start date (yyyy-MM-dd)."),
-    period2End: z.string().describe("Second period end date (yyyy-MM-dd)."),
+    period1Start: z
+      .string()
+      .describe(
+        "First period start date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
+    period1End: z
+      .string()
+      .describe(
+        "First period end date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
+    period2Start: z
+      .string()
+      .describe(
+        "Second period start date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
+    period2End: z
+      .string()
+      .describe(
+        "Second period end date. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({
@@ -73,6 +98,10 @@ export const comparePeriods = tool({
   }) => {
     const db = getDb();
     const guid = resolveLocationGuid(locationId);
+    const resolvedPeriod1Start = resolveDate(period1Start);
+    const resolvedPeriod1End = resolveDate(period1End);
+    const resolvedPeriod2Start = resolveDate(period2Start);
+    const resolvedPeriod2End = resolveDate(period2End);
 
     if (!guid) return { error: "No location configured" };
 
@@ -117,8 +146,8 @@ export const comparePeriods = tool({
       };
     }
 
-    const p1 = aggregatePeriod(period1Start, period1End);
-    const p2 = aggregatePeriod(period2Start, period2End);
+    const p1 = aggregatePeriod(resolvedPeriod1Start, resolvedPeriod1End);
+    const p2 = aggregatePeriod(resolvedPeriod2Start, resolvedPeriod2End);
 
     const salesDelta = p1.netSales - p2.netSales;
     const salesDeltaPct =

@@ -4,6 +4,7 @@ interface MetricCardProps {
   delta?: number | null;
   deltaLabel?: string;
   format?: "currency" | "percent" | "number";
+  invertDeltaSemantics?: boolean;
 }
 
 export function MetricCard({
@@ -11,9 +12,12 @@ export function MetricCard({
   value,
   delta,
   deltaLabel,
+  invertDeltaSemantics = false,
 }: MetricCardProps) {
   const isPositive = delta !== undefined && delta !== null && delta > 0;
   const isNegative = delta !== undefined && delta !== null && delta < 0;
+  const isGood = invertDeltaSemantics ? isNegative : isPositive;
+  const isBad = invertDeltaSemantics ? isPositive : isNegative;
 
   return (
     <div className="ai-panel rounded-xl p-3.5 sm:rounded-2xl sm:p-4">
@@ -26,9 +30,9 @@ export function MetricCard({
       {delta !== undefined && delta !== null && (
         <p
           className={`mt-1 text-xs font-medium sm:text-sm ${
-            isPositive
+            isGood
               ? "text-success"
-              : isNegative
+              : isBad
                 ? "text-danger"
                 : "text-muted-foreground"
           }`}

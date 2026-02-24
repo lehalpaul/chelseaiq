@@ -9,6 +9,9 @@ import { ComparisonTable } from "./comparison-table";
 import { RecommendationCards } from "./recommendation-card";
 import { ShiftTable } from "./shift-table";
 import { AnalysisStep } from "./analysis-step";
+import { CostMetricsGrid } from "./cost-metrics-grid";
+import { CostBreakdownCard } from "./cost-breakdown-card";
+import { InvoiceTable } from "./invoice-table";
 
 type ToolRenderContext = {
   isStreaming: boolean;
@@ -32,6 +35,42 @@ const TOOL_RENDERERS: Record<string, ToolRenderer> = {
         )}
     </div>
   ),
+  getDailyCost: (result) => (
+    <div className="space-y-3">
+      <CostMetricsGrid data={result as never} />
+      {Array.isArray(result.recommendations) &&
+        result.recommendations.length > 0 && (
+          <RecommendationCards
+            recommendations={result.recommendations as never}
+          />
+        )}
+    </div>
+  ),
+  getCostByCategory: (result) => {
+    const categories = result.categories as Array<{
+      rank?: number;
+      name: string;
+      cost: number;
+      pct?: number;
+    }> | undefined;
+    if (!categories) return null;
+    return <CostBreakdownCard title="Cost by Category" items={categories} />;
+  },
+  getVendorSpend: (result) => {
+    const vendors = result.vendors as Array<{
+      rank?: number;
+      name: string;
+      cost: number;
+      pct?: number;
+    }> | undefined;
+    if (!vendors) return null;
+    return <CostBreakdownCard title="Vendor Spend" items={vendors} />;
+  },
+  getInvoiceList: (result) => {
+    const invoices = result.invoices as Array<Record<string, unknown>> | undefined;
+    if (!invoices) return null;
+    return <InvoiceTable invoices={invoices as never} />;
+  },
   getRevenueByLocation: (result) => {
     const locations = result.locations as Array<Record<string, unknown>>;
     if (locations) return <ComparisonTable locations={locations as never} />;
@@ -215,6 +254,11 @@ const TOOL_LABELS: Record<string, string> = {
   compareLocations: "Comparing locations...",
   comparePeriods: "Comparing periods...",
   addAnalysisStep: "Summarizing findings...",
+  getDailyCost: "Loading cost metrics...",
+  getCostByCategory: "Loading category costs...",
+  getVendorSpend: "Loading vendor spend...",
+  getCostTrend: "Loading cost trend...",
+  getInvoiceList: "Loading invoices...",
 };
 
 function extractToolName(partType: string): string | null {

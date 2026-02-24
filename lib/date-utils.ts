@@ -47,7 +47,7 @@ export function fromIsoDate(dateStr: string): Date {
 
 const DEFAULT_TZ = "America/Chicago";
 
-function getBusinessTz(): string {
+export function getBusinessTz(): string {
   const tz = process.env.BUSINESS_TZ || DEFAULT_TZ;
   try {
     Intl.DateTimeFormat(undefined, { timeZone: tz });

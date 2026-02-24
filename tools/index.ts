@@ -12,6 +12,7 @@ import { getGuestMetrics, getDiningOptionBreakdown } from "./guest";
 import { getExecutiveBrief } from "./brief";
 import { compareLocations, comparePeriods } from "./comparison";
 import { addAnalysisStep } from "./analysis";
+import { getDailyCost, getCostByCategory, getVendorSpend, getCostTrend, getInvoiceList } from "./costs";
 
 export const agentTools = {
   getDailyRevenue,
@@ -35,4 +36,9 @@ export const agentTools = {
   compareLocations,
   comparePeriods,
   addAnalysisStep,
+  getDailyCost,
+  getCostByCategory,
+  getVendorSpend,
+  getCostTrend,
+  getInvoiceList,
 };

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import Database from "better-sqlite3";
 import fs from "fs";
 
@@ -36,6 +37,30 @@ if (fs.existsSync(shmPath)) {
 const verify = new Database(dbPath, { readonly: true });
 const row = verify.prepare("SELECT COUNT(*) AS cnt FROM daily_metrics").get() as { cnt: number };
 console.log(`Verified: ${row.cnt} rows in daily_metrics`);
+
+const meTableExists = verify
+  .prepare(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'me_daily_costs'"
+  )
+  .get() as { name: string } | undefined;
+
+if (meTableExists) {
+  const meRow = verify
+    .prepare("SELECT COUNT(*) AS cnt FROM me_daily_costs")
+    .get() as { cnt: number };
+  console.log(`Verified: ${meRow.cnt} rows in me_daily_costs`);
+
+  if (
+    process.env.MARGINEDGE_API_KEY &&
+    process.env.MARGINEDGE_RESTAURANT_UNIT_ID &&
+    meRow.cnt === 0
+  ) {
+    console.warn("Warning: MarginEdge env vars are set but me_daily_costs has 0 rows.");
+  }
+} else {
+  console.log("Verified: me_daily_costs table not present (MarginEdge not enabled).");
+}
+
 verify.close();
 
 console.log("Database checkpointed and ready for deploy.");

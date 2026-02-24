@@ -8,7 +8,12 @@ export const getExecutiveBrief = tool({
   description:
     "Get a comprehensive executive brief with key metrics, top items, and labor data. Use for 'Give me a summary' or 'Executive brief' questions.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
   }),
   execute: async ({ date }) => {
     const db = getDb();

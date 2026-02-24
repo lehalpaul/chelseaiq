@@ -280,3 +280,97 @@ CREATE TABLE IF NOT EXISTS server_daily_metrics (
 );
 
 CREATE INDEX IF NOT EXISTS idx_server_daily_loc_date ON server_daily_metrics(location_guid, business_date);
+
+-- ========================================
+-- MARGINEDGE COST DATA
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS me_categories (
+  category_id TEXT NOT NULL,
+  restaurant_unit_id TEXT NOT NULL,
+  category_name TEXT,
+  category_type TEXT,
+  accounting_code TEXT,
+  PRIMARY KEY (category_id, restaurant_unit_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_me_categories_unit ON me_categories(restaurant_unit_id);
+
+CREATE TABLE IF NOT EXISTS me_vendors (
+  vendor_id TEXT NOT NULL,
+  restaurant_unit_id TEXT NOT NULL,
+  vendor_name TEXT,
+  central_vendor_id TEXT,
+  PRIMARY KEY (vendor_id, restaurant_unit_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_me_vendors_unit ON me_vendors(restaurant_unit_id);
+
+CREATE TABLE IF NOT EXISTS me_orders (
+  order_id TEXT NOT NULL,
+  restaurant_unit_id TEXT NOT NULL,
+  invoice_number TEXT,
+  invoice_date TEXT NOT NULL,
+  created_date TEXT,
+  vendor_id TEXT,
+  vendor_name TEXT,
+  order_total REAL DEFAULT 0,
+  tax REAL DEFAULT 0,
+  delivery_charges REAL DEFAULT 0,
+  other_charges REAL DEFAULT 0,
+  credit_amount REAL DEFAULT 0,
+  is_credit INTEGER DEFAULT 0,
+  status TEXT,
+  PRIMARY KEY (order_id, restaurant_unit_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_me_orders_unit_invoice_date ON me_orders(restaurant_unit_id, invoice_date);
+CREATE INDEX IF NOT EXISTS idx_me_orders_unit_created_date ON me_orders(restaurant_unit_id, created_date);
+
+CREATE TABLE IF NOT EXISTS me_order_line_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id TEXT NOT NULL,
+  restaurant_unit_id TEXT NOT NULL,
+  vendor_item_code TEXT,
+  vendor_item_name TEXT,
+  quantity REAL,
+  unit_price REAL,
+  line_price REAL NOT NULL DEFAULT 0,
+  category_id TEXT,
+  packaging_id TEXT,
+  company_concept_product_id TEXT,
+  FOREIGN KEY (order_id, restaurant_unit_id) REFERENCES me_orders(order_id, restaurant_unit_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_me_line_items_unit_order ON me_order_line_items(restaurant_unit_id, order_id);
+CREATE INDEX IF NOT EXISTS idx_me_line_items_unit_category ON me_order_line_items(restaurant_unit_id, category_id);
+
+CREATE TABLE IF NOT EXISTS me_sync_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  restaurant_unit_id TEXT NOT NULL,
+  sync_type TEXT NOT NULL,
+  start_date TEXT,
+  end_date TEXT,
+  synced_at TEXT NOT NULL,
+  record_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'success',
+  warnings TEXT DEFAULT '[]'
+);
+
+CREATE INDEX IF NOT EXISTS idx_me_sync_unit_dates ON me_sync_log(restaurant_unit_id, start_date, end_date);
+
+CREATE TABLE IF NOT EXISTS me_daily_costs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  restaurant_unit_id TEXT NOT NULL,
+  invoice_date TEXT NOT NULL,
+  total_cost REAL DEFAULT 0,
+  total_tax REAL DEFAULT 0,
+  total_delivery REAL DEFAULT 0,
+  total_other_charges REAL DEFAULT 0,
+  total_credits REAL DEFAULT 0,
+  invoice_count INTEGER DEFAULT 0,
+  vendor_count INTEGER DEFAULT 0,
+  cost_by_category TEXT DEFAULT '{}',
+  cost_by_vendor TEXT DEFAULT '{}',
+  UNIQUE (restaurant_unit_id, invoice_date)
+);

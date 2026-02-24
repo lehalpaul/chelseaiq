@@ -8,7 +8,12 @@ export const getLaborSummary = tool({
   description:
     "Get labor summary including hours, cost, SPLH (sales per labor hour), and overtime. Use for labor cost analysis.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {
@@ -55,7 +60,12 @@ export const getServerPerformance = tool({
   description:
     "Get per-server performance metrics including sales, checks, tips, and sales per hour. Use for 'Who was our top server?' questions.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {
@@ -100,7 +110,12 @@ export const getOvertimeReport = tool({
   description:
     "Get overtime report showing employees with overtime hours. Use for overtime monitoring.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {
@@ -149,7 +164,12 @@ export const getEmployeesOnShift = tool({
   description:
     "Get employees who worked a given day, including role, clock-in/out times, total hours, and overtime flag. Use for staffing questions like 'who was working yesterday?'",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID or name."),
   }),
   execute: async ({ date, locationId }) => {

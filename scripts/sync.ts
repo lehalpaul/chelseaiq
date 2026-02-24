@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { syncDate } from "../lib/db-seed";
+import { syncMEOrders, syncMERefData } from "../lib/me-seed";
 import { getAllLocationGuids, toIsoDate, yesterday } from "../lib/date-utils";
 import { closeDb } from "../lib/db";
 import { subDays, parseISO } from "date-fns";
@@ -55,6 +56,39 @@ async function main() {
         console.error(`Error syncing ${guid} for ${date}:`, err);
       }
     }
+  }
+
+  if (process.env.MARGINEDGE_API_KEY && process.env.MARGINEDGE_RESTAURANT_UNIT_ID) {
+    const sortedDates = [...dates].sort();
+    const earliestDateInRun = sortedDates[0];
+    const latestDateInRun = sortedDates[sortedDates.length - 1];
+    const lookbackStart = toIsoDate(subDays(parseISO(latestDateInRun), 30));
+    const createdStartDate = earliestDateInRun < lookbackStart
+      ? earliestDateInRun
+      : lookbackStart;
+
+    try {
+      console.log(`\nSyncing MarginEdge reference data...`);
+      const refResult = await syncMERefData();
+      console.log(
+        `MarginEdge ref sync complete: ${refResult.categoryCount} categories, ${refResult.vendorCount} vendors`
+      );
+
+      console.log(
+        `Syncing MarginEdge orders for createdDate range ${createdStartDate} to ${latestDateInRun}...`
+      );
+      const meResult = await syncMEOrders(createdStartDate, latestDateInRun);
+      console.log(
+        `MarginEdge order sync complete: ${meResult.orderCount} orders, ${meResult.invoiceDateCount} invoice dates recomputed`
+      );
+      if (meResult.warnings.length > 0) {
+        console.warn(`MarginEdge warnings: ${meResult.warnings.length}`);
+      }
+    } catch (err) {
+      console.error("Error syncing MarginEdge:", err);
+    }
+  } else {
+    console.log("\nSkipping MarginEdge sync: set MARGINEDGE_API_KEY and MARGINEDGE_RESTAURANT_UNIT_ID to enable.");
   }
 
   console.log(`\nSync complete. Total orders processed: ${totalOrders}`);

@@ -7,7 +7,12 @@ export const getGuestMetrics = tool({
   description:
     "Get guest count, average spend, and dining option breakdown. Use for guest experience analysis.",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {
@@ -55,7 +60,12 @@ export const getDiningOptionBreakdown = tool({
   description:
     "Get detailed breakdown of sales by dining option (dine-in, takeout, delivery, etc.).",
   inputSchema: z.object({
-    date: z.string().optional().describe("Date in yyyy-MM-dd format."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date string. Supports natural language (today, yesterday, last monday, last week) or yyyy-MM-dd."
+      ),
     locationId: z.string().optional().describe("Location GUID."),
   }),
   execute: async ({ date, locationId }) => {
